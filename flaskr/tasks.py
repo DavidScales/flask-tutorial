@@ -1,4 +1,5 @@
 from flaskr import create_celery_app
+from flaskr.extensions import mail
 
 celery = create_celery_app()
 
@@ -16,6 +17,15 @@ def mul(x, y):
 @celery.task
 def xsum(numbers):
     return sum(numbers)
+
+@celery.task
+def send_some_mail():
+    mail.send_message("hello friend",
+                #   subject="New form submission",
+                #   body="Hi",
+                  sender="form@flaskr.com",
+                  recipients=['sean.connery543@gmail.com'])
+    print('sent mail')
 
 # @celery.task
 # def deliver_contact_email(email, message):

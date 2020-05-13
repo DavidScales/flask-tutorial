@@ -2,6 +2,7 @@ import os
 
 from flask import Flask
 from celery import Celery
+from flaskr.extensions import mail
 
 CELERY_TASK_LIST = [
     'flaskr.tasks'
@@ -18,9 +19,9 @@ def create_celery_app(app=None):
     app = app or create_app()
 
     celery = Celery(app.import_name,
-                    broker='redis://localhost:6379/0', # use app.config
+                    broker=app.config['CELERY_BROKER_URL'],
                     include=CELERY_TASK_LIST)
-    celery.conf.update(result_expires=3600) # use app.config
+    celery.conf.update(app.config)
 
     TaskBase = celery.Task
 
@@ -42,6 +43,7 @@ def create_app(test_config=None):
         SECRET_KEY='dev',
         DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
     )
+    app.config.from_object('config.settings')
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
@@ -63,8 +65,9 @@ def create_app(test_config=None):
 
     @app.route('/celery-check')
     def celery_check():
-        from .tasks import add
+        from .tasks import add, send_some_mail
         add.delay(1,1)
+        send_some_mail.delay()
         return 'task queued successfully'
 
     from . import db
@@ -76,5 +79,7 @@ def create_app(test_config=None):
     from . import blog
     app.register_blueprint(blog.bp)
     app.add_url_rule('/', endpoint='index')
+
+    mail.init_app(app)
 
     return app
