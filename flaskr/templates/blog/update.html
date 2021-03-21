@@ -6,11 +6,24 @@
 
 {% block content %}
   <form method="post">
-    <label for="title">Title</label>
+
+    {{ form.csrf_token }}
+
+    {{ form.title.label }} {{ form.title() }}
+
+    {% if form.title.errors %}
+        <ul class="errors">{% for error in form.title.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    {{ form.body.label }} {{ form.body() }}
+    <!-- default values? -->
+
+    <!-- <label for="title">Title</label>
     <input name="title" id="title"
       value="{{ request.form['title'] or post['title'] }}" required>
     <label for="body">Body</label>
-    <textarea name="body" id="body">{{ request.form['body'] or post['body'] }}</textarea>
+    <textarea name="body" id="body">{{ request.form['body'] or post['body'] }}</textarea> -->
+
     <input type="submit" value="Save">
   </form>
   <hr>

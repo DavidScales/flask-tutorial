@@ -62,32 +62,61 @@ def get_post(id, check_author=True):
     return post
 
 
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField
+from wtforms.validators import DataRequired
+
+class BlogForm(FlaskForm):
+    title = StringField('title', validators=[DataRequired()])
+    body = TextAreaField('body')
+
+
 @bp.route('/<int:id>/update', methods=('GET', 'POST'))
 @login_required
 def update(id):
     post = get_post(id)
 
+    # probably a cleaner way here to get 1. default input & 2. restore user
+    # input during validation error but not obvious in docs
+    user_input = None
     if request.method == 'POST':
-        title = request.form['title']
-        body = request.form['body']
-        error = None
+        user_input = request.form
+        print(request.form)
+    form = BlogForm(formdata=user_input, body='default body')
+    if form.validate_on_submit():
+        db = get_db()
+        db.execute(
+            'UPDATE post SET title = ?, body = ?'
+            ' WHERE id = ?',
+            (form.title.data, form.body.data, id)
+        )
+        db.commit()
+        return redirect(url_for('blog.index'))
 
-        if not title:
-            error = 'Title is required.'
+    return render_template('blog/update.html', post=post, form=form)
 
-        if error is not None:
-            flash(error)
-        else:
-            db = get_db()
-            db.execute(
-                'UPDATE post SET title = ?, body = ?'
-                ' WHERE id = ?',
-                (title, body, id)
-            )
-            db.commit()
-            return redirect(url_for('blog.index'))
 
-    return render_template('blog/update.html', post=post)
+    # if request.method == 'POST':
+    #     title = request.form['title']
+    #     body = request.form['body']
+    #     error = None
+
+    #     if not title:
+    #         error = 'Title is required.'
+
+    #     if error is not None:
+    #         flash(error)
+    #     else:
+    #         db = get_db()
+    #         db.execute(
+    #             'UPDATE post SET title = ?, body = ?'
+    #             ' WHERE id = ?',
+    #             (title, body, id)
+    #         )
+    #         db.commit()
+    #         return redirect(url_for('blog.index'))
+
+    # return render_template('blog/update.html', post=post)
 
 
 @bp.route('/<int:id>/delete', methods=('POST',))
